@@ -71,14 +71,17 @@ export async function exportCvToPdf(data: CvData): Promise<Blob> {
 
   let page = doc.addPage([A4.w, A4.h]);
   let y = A4.h - marginY;
+  let pageIndex = 0;
 
   const newPage = () => {
     page = doc.addPage([A4.w, A4.h]);
     y = A4.h - marginY;
+    pageIndex += 1;
   };
   const need = (h: number) => {
     if (y - h < marginY) newPage();
   };
+
 
   const wrap = (text: string, font: typeof regular, size: number, width: number) => {
     const words = sanitize(text).split(/\s+/).filter(Boolean);
