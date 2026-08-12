@@ -186,7 +186,20 @@ export async function exportCvToPdf(data: CvData): Promise<Blob> {
     const periodW = 30 * MM;
     const bodyX = marginX + periodW + 4 * MM;
     const bodyW = contentW - periodW - 4 * MM;
-    need(30);
+
+    // Blockhöhe vorab messen, damit ein Eintrag nicht mitten im Kopf umbricht.
+    const periodLines = e.period ? wrap(e.period, regular, base - 1, periodW).length : 0;
+    let bodyH = 0;
+    if (e.title) bodyH += wrap(e.title, bold, base, bodyW).length * base * 1.35;
+    if (e.org) bodyH += wrap(e.org, italic, base - 1, bodyW).length * (base - 1) * 1.35;
+    const bulletsH = e.bullets
+      .filter((b) => b.trim())
+      .reduce((sum, b) => sum + wrap(b, regular, base, bodyW - 10).length * base * 1.35, 0);
+    const headH = Math.max(periodLines * (base - 1) * 1.3, bodyH);
+    // Kopf plus erste Bulletzeile zusammenhalten, nicht den ganzen Block.
+    need(Math.min(headH + (bulletsH ? base * 1.35 : 0), A4.h - marginY * 2));
+
+    const startPage = pageIndex;
     const top = y;
     if (e.period) {
       for (const line of wrap(e.period, regular, base - 1, periodW)) {
@@ -207,8 +220,11 @@ export async function exportCvToPdf(data: CvData): Promise<Blob> {
         y -= base * 1.35;
       });
     }
-    y = Math.min(y, afterPeriod) - base * 0.9;
+    // Nur vergleichen, wenn kein Seitenumbruch stattfand – sonst entstehen riesige Lücken.
+    if (pageIndex === startPage) y = Math.min(y, afterPeriod);
+    y -= base * 0.9;
   };
+
 
   const groupBlock = (g: SkillGroup, asList: boolean) => {
     need(base * 3);
