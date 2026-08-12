@@ -2,6 +2,8 @@ import type { CvData, Entry, SkillGroup } from "./cv";
 
 const A4 = { w: 595.28, h: 841.89 };
 const MM = 2.834645;
+/** Wie in der Editiermaske: der Export ist immer mindestens 3 Seiten lang. */
+const MIN_PAGES = 3;
 
 const sanitize = (s: string) =>
   (s ?? "")
