@@ -3,7 +3,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { Plus, Trash2, ChevronUp, ChevronDown } from "lucide-react";
+import { Plus, Trash2, ChevronUp, ChevronDown, ImagePlus, RefreshCw } from "lucide-react";
+import { useRef } from "react";
 import { type CvData, type Entry, type SkillGroup, emptyEntry, emptyGroup } from "@/lib/cv";
 
 type Props = {
@@ -19,6 +20,57 @@ const move = <T,>(arr: T[], i: number, dir: -1 | 1): T[] => {
   copy.splice(j, 0, item as T);
   return copy;
 };
+
+function PhotoField({ photo, onChange }: { photo: string; onChange: (next: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const pick = (file?: File | null) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => onChange(String(reader.result ?? ""));
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="flex items-center gap-4">
+      <div
+        className="flex h-28 w-[5.5rem] shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted"
+        aria-hidden={!photo}
+      >
+        {photo ? (
+          <img src={photo} alt="Aktuelles Bewerbungsfoto" className="h-full w-full object-cover" />
+        ) : (
+          <ImagePlus className="size-6 text-muted-foreground" />
+        )}
+      </div>
+      <div className="space-y-2">
+        <Label>Bewerbungsfoto</Label>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            pick(e.target.files?.[0]);
+            e.target.value = "";
+          }}
+        />
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="secondary" size="sm" onClick={() => inputRef.current?.click()}>
+            {photo ? <RefreshCw className="size-4" /> : <ImagePlus className="size-4" />}
+            {photo ? "Bild tauschen" : "Bild hinzufügen"}
+          </Button>
+          {photo ? (
+            <Button type="button" variant="ghost" size="sm" onClick={() => onChange("")}>
+              <Trash2 className="size-4" /> Entfernen
+            </Button>
+          ) : null}
+        </div>
+        <p className="text-xs text-muted-foreground">JPG oder PNG, wird lokal im Browser gespeichert.</p>
+      </div>
+    </div>
+  );
+}
 
 function RowTools({ onUp, onDown, onDelete }: { onUp: () => void; onDown: () => void; onDelete: () => void }) {
   return (
@@ -145,6 +197,7 @@ export function CvEditor({ data, onChange }: Props) {
     <div className="space-y-8">
       <div className="space-y-3">
         <h3 className="text-lg">Kopfbereich</h3>
+        <PhotoField photo={data.photo ?? ""} onChange={(photo) => set({ photo })} />
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1">
             <Label>Name</Label>
