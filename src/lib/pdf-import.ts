@@ -2,6 +2,8 @@ import { type CvData, type Entry, emptyCv, uid } from "./cv";
 
 const PERIOD_START =
   /^(\d{2}\/\d{4}|\d{4})(\s*[-–—]\s*(\d{2}\/\d{4}|\d{4}|aktuell|heute|present)\b)?/i;
+export const COLUMN_BREAK = "\u000c";
+
 const PERIOD_END = /^[-–—]\s*(\d{2}\/\d{4}|\d{4}|aktuell|heute|present)\b/i;
 
 const SECTIONS: { key: keyof CvData | "experience" | "education" | "skills" | "languages" | "extras"; re: RegExp }[] = [
@@ -59,6 +61,8 @@ export async function extractLines(file: File): Promise<string[]> {
     // Join visually wrapped lines: a line that reaches the column's right edge
     // continues on the next line.
     const rightEdge = Math.max(...raw.map((r) => r.end), 0);
+    const gaps = raw.slice(1).map((r, i) => raw[i]!.y - r.y).filter((g) => g > 0).sort((a, b) => a - b);
+    const medianGap = gaps.length ? gaps[Math.floor(gaps.length / 2)]! : 12;
     const out: string[] = [];
     let prev: (typeof raw)[number] | null = null;
     for (const row of raw) {
@@ -70,7 +74,7 @@ export async function extractLines(file: File): Promise<string[]> {
         prev.end > rightEdge - 14 &&
         Math.abs(row.start - prev.start) < 3 &&
         Math.abs(row.h - prev.h) < 1.5 &&
-        prev.y - row.y < prev.h * 2.2;
+        prev.y - row.y < Math.min(prev.h * 2.2, medianGap * 1.3);
       if (wrapped && prev) {
         const merged: string = /-$/.test(prev.text)
           ? prev.text.replace(/-$/, "") + row.text
@@ -129,10 +133,10 @@ export async function extractLines(file: File): Promise<string[]> {
 
     if (split !== null) {
       const at = split;
-      lines.push(...buildLines(pieces.filter((i) => i.x < at)));
-      lines.push(...buildLines(pieces.filter((i) => i.x >= at)));
+      lines.push(...buildLines(pieces.filter((i) => i.x < at)), COLUMN_BREAK);
+      lines.push(...buildLines(pieces.filter((i) => i.x >= at)), COLUMN_BREAK);
     } else {
-      lines.push(...buildLines(pieces));
+      lines.push(...buildLines(pieces), COLUMN_BREAK);
     }
   }
 
@@ -140,7 +144,7 @@ export async function extractLines(file: File): Promise<string[]> {
   const merged: string[] = [];
   for (const line of lines) {
     const prev = merged[merged.length - 1];
-    if (prev && /\S-$/.test(prev) && /^[A-Za-zÄÖÜäöüß]/.test(line) && line.length < 30) {
+    if (line !== COLUMN_BREAK && prev && prev !== COLUMN_BREAK && /\S-$/.test(prev) && /^[A-Za-zÄÖÜäöüß]/.test(line) && line.length < 30) {
       merged[merged.length - 1] = prev.replace(/-$/, "") + line;
     } else {
       merged.push(line);
@@ -170,7 +174,14 @@ export function linesToCv(lines: string[]): CvData {
   const preamble: string[] = [];
   const intro: string[] = [];
 
+  let sectionSeen = false;
+
   for (const raw of lines) {
+    if (raw === COLUMN_BREAK) {
+      push();
+      section = null;
+      continue;
+    }
     const line = raw.trim();
     if (!line) continue;
 
@@ -188,6 +199,7 @@ export function linesToCv(lines: string[]): CvData {
     if (hit && line.length < 60) {
       push();
       section = hit.key as string;
+      sectionSeen = true;
       if (section === "skills" || section === "extras") {
         const list = section === "skills" ? cv.skills : cv.extras;
         list.push({ id: uid(), title: line.replace(/^#+\s*/, ""), items: [] });
@@ -250,7 +262,7 @@ export function linesToCv(lines: string[]): CvData {
       continue;
     }
 
-    if (section === null) intro.push(line);
+    if (section === null && !sectionSeen) intro.push(line);
     else preamble.push(line);
   }
   push();
