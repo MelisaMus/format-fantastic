@@ -237,6 +237,9 @@ export async function exportCvToPdf(data: CvData): Promise<Blob> {
     data.extras.forEach((g) => groupBlock(g, true));
   }
 
+  // Der Export spiegelt die Länge der Editiermaske (mindestens 3 A4-Seiten).
+  while (doc.getPageCount() < MIN_PAGES) doc.addPage([A4.w, A4.h]);
+
   const bytes = await doc.save();
   return new Blob([bytes as BlobPart], { type: "application/pdf" });
 }
