@@ -132,6 +132,7 @@ export function linesToCv(lines: string[]): CvData {
   };
 
   const preamble: string[] = [];
+  const intro: string[] = [];
 
   for (const raw of lines) {
     const line = raw.trim();
@@ -213,40 +214,44 @@ export function linesToCv(lines: string[]): CvData {
       continue;
     }
 
-    preamble.push(line);
+    if (section === null) intro.push(line);
+    else preamble.push(line);
   }
   push();
 
-  const clean = preamble.map((l) => l.replace(/^#+\s*/, "").trim()).filter(Boolean);
+  const clean = [...preamble, ...intro].map((l) => l.replace(/^#+\s*/, "").trim()).filter(Boolean);
 
-  // Name: a short, capitalised line without digits or contact markers.
-  const nameCandidate = clean.find(
-    (l) =>
+  const isNameLike = (l: string) => {
+    const words = l.split(/\s+/);
+    return (
       l.length <= 45 &&
-      l.split(/\s+/).length <= 4 &&
-      !/\d|@|\/|:/.test(l) &&
-      /^[A-ZÄÖÜ]/.test(l) &&
-      !/^(persönliche|kontakt|profil|lebenslauf|curriculum)/i.test(l),
-  );
-  cv.name = nameCandidate ?? clean[0] ?? "";
+      words.length >= 2 &&
+      words.length <= 3 &&
+      !/[\d@/:•|]/.test(l) &&
+      words.every((w) => /^[A-ZÄÖÜ]/.test(w)) &&
+      !/^(persönliche|kontakt|profil|lebenslauf|curriculum)/i.test(l)
+    );
+  };
 
-  // Headline: short descriptive line, often with separators.
+  cv.name = clean.find(isNameLike) ?? clean[0] ?? "";
+
   const headline = clean.find(
-    (l) => l !== cv.name && l.length <= 90 && l.length > 10 && (/[|·•]/.test(l) || l.split(/\s+/).length <= 10),
+    (l) => l !== cv.name && l.length > 10 && l.length <= 90 && (/[|·•]/.test(l) || l.split(/\s+/).length <= 8),
   );
   if (headline) cv.headline = headline;
 
-  // Summary: the longest paragraph-like line.
-  const summary = clean
-    .filter((l) => l !== cv.name && l !== cv.headline && l.length > 80)
-    .sort((a, b) => b.length - a.length)[0];
-  if (summary) cv.summary = summary;
+  // Summary: the intro paragraph above the first section, joined back together.
+  const summary = intro
+    .filter((l) => l !== cv.name && l !== cv.headline)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (summary.length > 40) cv.summary = summary;
 
-  const contactRest = clean.filter(
-    (l) => l !== cv.name && l !== cv.headline && l !== cv.summary && /straße|str\.|weg|platz|\d{5}/i.test(l),
-  );
-  if (!cv.address && contactRest[0]) cv.address = contactRest[0];
-
+  if (!cv.address) {
+    const addr = clean.find((l) => /(straße|strasse|str\.|weg|platz).*\d|\d{5}\s+\w/i.test(l));
+    if (addr) cv.address = addr;
+  }
 
   return cv;
 }
