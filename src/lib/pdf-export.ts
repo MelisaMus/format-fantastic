@@ -64,8 +64,9 @@ export async function exportCvToPdf(data: CvData): Promise<Blob> {
 
   const scale = data.settings?.fontScale ?? 1;
   const base = 10 * scale;
-  const marginX = 15 * MM;
-  const marginY = 16 * MM;
+  // Seitenränder: 2 cm auf allen Seiten.
+  const marginX = 20 * MM;
+  const marginY = 20 * MM;
   const contentW = A4.w - marginX * 2;
 
   let page = doc.addPage([A4.w, A4.h]);
