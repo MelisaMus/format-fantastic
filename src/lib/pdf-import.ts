@@ -32,7 +32,8 @@ export async function extractLines(file: File): Promise<string[]> {
       arr.push(piece);
       rows.set(key, arr);
     }
-    const out: string[] = [];
+
+    const raw: { text: string; start: number; end: number }[] = [];
     for (const y of [...rows.keys()].sort((a, b) => b - a)) {
       const sorted = rows.get(y)!.sort((a, b) => a.x - b.x);
       let text = "";
@@ -45,10 +46,32 @@ export async function extractLines(file: File): Promise<string[]> {
         prevEnd = piece.end;
       }
       const clean = text.replace(/\s+/g, " ").trim();
-      if (clean) out.push(clean);
+      if (clean) raw.push({ text: clean, start: sorted[0]!.x, end: prevEnd });
+    }
+
+    // Join visually wrapped lines: a line that reaches the column's right edge
+    // continues on the next line.
+    const rightEdge = Math.max(...raw.map((r) => r.end), 0);
+    const out: string[] = [];
+    let prev: { text: string; end: number } | null = null;
+    for (const row of raw) {
+      const startsNewBlock =
+        /^[•·▪◦*]/.test(row.text) || PERIOD_START.test(row.text) || PERIOD_END.test(row.text);
+      const wrapped = prev && !startsNewBlock && prev.end > rightEdge - 14;
+      if (wrapped) {
+        const merged = /-$/.test(prev!.text)
+          ? prev!.text.replace(/-$/, "") + row.text
+          : `${prev!.text} ${row.text}`;
+        out[out.length - 1] = merged;
+        prev = { text: merged, end: row.end };
+      } else {
+        out.push(row.text);
+        prev = { text: row.text, end: row.end };
+      }
     }
     return out;
   };
+
 
   for (let p = 1; p <= doc.numPages; p++) {
     const page = await doc.getPage(p);
