@@ -130,8 +130,11 @@ export async function exportCvToPdf(data: CvData): Promise<Blob> {
   }
 
   const heading = (title: string) => {
-    need(28);
-    y -= 6;
+    // Reserve heading + rule + at least one line of the following block so a
+    // section title never ends up alone at the bottom of a page.
+    need(base * 4.5);
+    const atPageTop = y > A4.h - marginY - 1;
+    if (!atPageTop) y -= base * 1.5; // consistent air above every section title
     page.drawText(sanitize(title.toUpperCase()), {
       x: marginX,
       y: y - base,
@@ -139,10 +142,11 @@ export async function exportCvToPdf(data: CvData): Promise<Blob> {
       font: bold,
       color: rgb(0.18, 0.23, 0.3),
     });
-    y -= base + 6;
+    y -= base + 5;
     page.drawLine({ start: { x: marginX, y }, end: { x: marginX + contentW, y }, thickness: 0.6, color: rule });
-    y -= 10;
+    y -= base * 0.9;
   };
+
 
   const entryBlock = (e: Entry) => {
     const periodW = 30 * MM;
