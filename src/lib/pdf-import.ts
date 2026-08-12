@@ -132,13 +132,38 @@ export async function extractLines(file: File): Promise<string[]> {
       }
     }
 
+    const pageLines: string[] = [];
     if (split !== null) {
       const at = split;
-      lines.push(...buildLines(pieces.filter((i) => i.x < at)), COLUMN_BREAK);
-      lines.push(...buildLines(pieces.filter((i) => i.x >= at)), COLUMN_BREAK);
+      pageLines.push(...buildLines(pieces.filter((i) => i.x < at)), COLUMN_BREAK);
+      pageLines.push(...buildLines(pieces.filter((i) => i.x >= at)), COLUMN_BREAK);
     } else {
-      lines.push(...buildLines(pieces), COLUMN_BREAK);
+      pageLines.push(...buildLines(pieces), COLUMN_BREAK);
     }
+    pages.push(pageLines);
+  }
+
+  // Drop page numbers and headers/footers that repeat on several pages.
+  const isPageNumber = (l: string) => /^(seite\s*)?\d+(\s*(\/|von|of)\s*\d+)?$/i.test(l.trim());
+  const edgeCount = new Map<string, number>();
+  for (const pl of pages) {
+    const body = pl.filter((l) => l !== COLUMN_BREAK);
+    for (const l of [body[0], body[body.length - 1]]) {
+      if (l && l.length < 90) edgeCount.set(l, (edgeCount.get(l) ?? 0) + 1);
+    }
+  }
+  for (let i = 0; i < pages.length; i++) {
+    const pl = pages[i]!;
+    lines.push(
+      ...pl.filter((l, k) => {
+        if (l === COLUMN_BREAK) return true;
+        if (isPageNumber(l)) return false;
+        const atEdge = k === 0 || k === pl.length - 1 || k === pl.length - 2;
+        // Keep the first line of page 1 – that is usually the name.
+        if (i === 0 && k === 0) return true;
+        return !(atEdge && (edgeCount.get(l) ?? 0) > 1);
+      }),
+    );
   }
 
   // Re-join words that were hyphenated across a line break.
