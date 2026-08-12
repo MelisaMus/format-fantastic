@@ -23,6 +23,7 @@ export async function extractLines(file: File): Promise<string[]> {
   const buf = await file.arrayBuffer();
   const doc = await pdfjs.getDocument({ data: buf }).promise;
   const lines: string[] = [];
+  const pages: string[][] = [];
 
   type Piece = { x: number; end: number; y: number; h: number; s: string };
 
