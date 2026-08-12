@@ -82,30 +82,31 @@ export async function exportCvToPdf(data: CvData): Promise<Blob> {
 
   // Header ------------------------------------------------------------------
   const photo = data.photo;
-  const photoW = 26 * MM;
-  const photoH = 33 * MM;
+  const circle = data.settings?.photoShape === "circle";
+  // Same box as the editor preview: 28x35mm (rect) or 30x30mm (circle).
+  const photoW = (circle ? 30 : 28) * MM;
+  const photoH = (circle ? 30 : 35) * MM;
   const headerW = photo ? contentW - photoW - 6 * MM : contentW;
 
   if (photo) {
     try {
-      const bytes = Uint8Array.from(atob(photo.split(",")[1] ?? ""), (c) => c.charCodeAt(0));
-      const img = photo.startsWith("data:image/png")
+      // Cover-crop to the box aspect ratio (like object-cover in the preview).
+      const cropped = await coverCrop(photo, photoW / photoH);
+      const bytes = Uint8Array.from(atob(cropped.split(",")[1] ?? ""), (c) => c.charCodeAt(0));
+      const img = cropped.startsWith("data:image/png")
         ? await doc.embedPng(bytes)
         : await doc.embedJpg(bytes);
-      // Keep the original aspect ratio (no stretching) and fit inside the photo box.
-      const fit = Math.min(photoW / img.width, photoH / img.height);
-      const drawW = img.width * fit;
-      const drawH = img.height * fit;
       page.drawImage(img, {
-        x: marginX + contentW - photoW + (photoW - drawW) / 2,
-        y: y - photoH + (photoH - drawH) / 2,
-        width: drawW,
-        height: drawH,
+        x: marginX + contentW - photoW,
+        y: y - photoH,
+        width: photoW,
+        height: photoH,
       });
     } catch {
       /* unsupported image – skip */
     }
   }
+
 
 
   const headerTop = y;
