@@ -33,7 +33,7 @@ export async function extractLines(file: File): Promise<string[]> {
       rows.set(key, arr);
     }
 
-    const raw: { text: string; start: number; end: number }[] = [];
+    const raw: { text: string; start: number; end: number; y: number; h: number }[] = [];
     for (const y of [...rows.keys()].sort((a, b) => b - a)) {
       const sorted = rows.get(y)!.sort((a, b) => a.x - b.x);
       let text = "";
@@ -46,27 +46,40 @@ export async function extractLines(file: File): Promise<string[]> {
         prevEnd = piece.end;
       }
       const clean = text.replace(/\s+/g, " ").trim();
-      if (clean) raw.push({ text: clean, start: sorted[0]!.x, end: prevEnd });
+      if (clean)
+        raw.push({
+          text: clean,
+          start: sorted[0]!.x,
+          end: prevEnd,
+          y,
+          h: Math.max(...sorted.map((i) => i.h)),
+        });
     }
 
     // Join visually wrapped lines: a line that reaches the column's right edge
     // continues on the next line.
     const rightEdge = Math.max(...raw.map((r) => r.end), 0);
     const out: string[] = [];
-    let prev: { text: string; end: number } | null = null;
+    let prev: (typeof raw)[number] | null = null;
     for (const row of raw) {
       const startsNewBlock =
         /^[•·▪◦*]/.test(row.text) || PERIOD_START.test(row.text) || PERIOD_END.test(row.text);
-      const wrapped = prev && !startsNewBlock && prev.end > rightEdge - 14;
+      const wrapped =
+        prev &&
+        !startsNewBlock &&
+        prev.end > rightEdge - 14 &&
+        Math.abs(row.start - prev.start) < 3 &&
+        Math.abs(row.h - prev.h) < 1.5 &&
+        prev.y - row.y < prev.h * 2.2;
       if (wrapped && prev) {
         const merged: string = /-$/.test(prev.text)
           ? prev.text.replace(/-$/, "") + row.text
           : `${prev.text} ${row.text}`;
         out[out.length - 1] = merged;
-        prev = { text: merged, end: row.end };
+        prev = { ...row, text: merged, start: prev.start };
       } else {
         out.push(row.text);
-        prev = { text: row.text, end: row.end };
+        prev = row;
       }
     }
     return out;
