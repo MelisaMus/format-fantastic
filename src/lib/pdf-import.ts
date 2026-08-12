@@ -76,8 +76,9 @@ export async function extractLines(file: File): Promise<string[]> {
         Math.abs(row.h - prev.h) < 1.5 &&
         prev.y - row.y < Math.min(prev.h * 2.2, medianGap * 1.3);
       if (wrapped && prev) {
+        const keepHyphen = /-$/.test(prev.text) && /^[A-ZÄÖÜ]/.test(row.text);
         const merged: string = /-$/.test(prev.text)
-          ? prev.text.replace(/-$/, "") + row.text
+          ? (keepHyphen ? prev.text : prev.text.replace(/-$/, "")) + row.text
           : `${prev.text} ${row.text}`;
         out[out.length - 1] = merged;
         prev = { ...row, text: merged, start: prev.start };
@@ -145,7 +146,7 @@ export async function extractLines(file: File): Promise<string[]> {
   for (const line of lines) {
     const prev = merged[merged.length - 1];
     if (line !== COLUMN_BREAK && prev && prev !== COLUMN_BREAK && /\S-$/.test(prev) && /^[A-Za-zÄÖÜäöüß]/.test(line) && line.length < 30) {
-      merged[merged.length - 1] = prev.replace(/-$/, "") + line;
+      merged[merged.length - 1] = (/^[A-ZÄÖÜ]/.test(line) ? prev : prev.replace(/-$/, "")) + line;
     } else {
       merged.push(line);
     }
@@ -300,6 +301,9 @@ export function linesToCv(lines: string[]): CvData {
     const addr = clean.find((l) => /(straße|strasse|str\.|weg|platz).*\d|\d{5}\s+\w/i.test(l));
     if (addr) cv.address = addr;
   }
+
+  cv.skills = cv.skills.filter((g) => g.items.length > 0);
+  cv.extras = cv.extras.filter((g) => g.items.length > 0);
 
   return cv;
 }
