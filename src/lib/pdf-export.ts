@@ -173,19 +173,20 @@ export async function exportCvToPdf(data: CvData): Promise<Blob> {
         y -= base * 1.35;
       });
     }
-    y = Math.min(y, afterPeriod) - 8;
+    y = Math.min(y, afterPeriod) - base * 0.9;
   };
 
   const groupBlock = (g: SkillGroup, asList: boolean) => {
-    need(24);
+    need(base * 3);
     if (g.title) drawText(g.title, { x: marginX, size: base, font: bold });
     if (asList) {
       for (const item of g.items.filter(Boolean)) drawText(`\u2022 ${item}`, { x: marginX + 8, size: base - 0.5 });
     } else {
       drawText(g.items.filter(Boolean).join(" \u00b7 "), { x: marginX, size: base - 0.5, color: muted });
     }
-    y -= 4;
+    y -= base * 0.6;
   };
+
 
   if (data.experience.length) {
     heading("Beruflicher Werdegang");
