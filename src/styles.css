@@ -201,7 +201,8 @@
 
   .sheet {
     width: 100%;
-    min-height: auto;
+    /* Druck spiegelt die Länge der Editiermaske: mindestens 3 A4-Seiten */
+    min-height: 891mm;
     box-shadow: none;
     transform: none !important;
   }

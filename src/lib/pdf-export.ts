@@ -2,6 +2,8 @@ import type { CvData, Entry, SkillGroup } from "./cv";
 
 const A4 = { w: 595.28, h: 841.89 };
 const MM = 2.834645;
+/** Wie in der Editiermaske: der Export ist immer mindestens 3 Seiten lang. */
+const MIN_PAGES = 3;
 
 const sanitize = (s: string) =>
   (s ?? "")
@@ -236,6 +238,9 @@ export async function exportCvToPdf(data: CvData): Promise<Blob> {
     heading("Zusätzliche Erfahrung");
     data.extras.forEach((g) => groupBlock(g, true));
   }
+
+  // Der Export spiegelt die Länge der Editiermaske (mindestens 3 A4-Seiten).
+  while (doc.getPageCount() < MIN_PAGES) doc.addPage([A4.w, A4.h]);
 
   const bytes = await doc.save();
   return new Blob([bytes as BlobPart], { type: "application/pdf" });
