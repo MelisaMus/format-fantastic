@@ -19,6 +19,7 @@ export type CvData = {
   address: string;
   email: string;
   phone: string;
+  photo: string;
   experience: Entry[];
   education: Entry[];
   skills: SkillGroup[];
@@ -45,6 +46,7 @@ export const emptyCv = (): CvData => ({
   address: "",
   email: "",
   phone: "",
+  photo: "",
   experience: [],
   education: [],
   skills: [],

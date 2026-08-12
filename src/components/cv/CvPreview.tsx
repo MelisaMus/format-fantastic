@@ -45,20 +45,30 @@ function EntryBlock({ period, title, org, bullets }: { period: string; title: st
 export function CvPreview({ data }: { data: CvData }) {
   return (
     <article className="sheet print-area shadow-lg">
-      <header className="border-b pb-4" style={{ borderColor: "#c9702f" }}>
-        <h1 className="text-[26pt] leading-tight" style={{ color: "#22303f" }}>
-          {data.name || "Dein Name"}
-        </h1>
-        {data.headline ? (
-          <p className="mt-1 text-[10.5pt] uppercase tracking-[0.12em]" style={{ color: "#c9702f" }}>
-            {data.headline}
+      <header className="flex items-start gap-6 border-b pb-4" style={{ borderColor: "#c9702f" }}>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-[26pt] leading-tight" style={{ color: "#22303f" }}>
+            {data.name || "Dein Name"}
+          </h1>
+          {data.headline ? (
+            <p className="mt-1 text-[10.5pt] uppercase tracking-[0.12em]" style={{ color: "#c9702f" }}>
+              {data.headline}
+            </p>
+          ) : null}
+          <p className="mt-2 flex flex-wrap gap-x-4 text-[9.5pt]" style={{ color: "#5c6675" }}>
+            {data.address ? <span>{data.address}</span> : null}
+            {data.email ? <span>{data.email}</span> : null}
+            {data.phone ? <span>{data.phone}</span> : null}
           </p>
+        </div>
+        {data.photo ? (
+          <img
+            src={data.photo}
+            alt={data.name ? `Bewerbungsfoto von ${data.name}` : "Bewerbungsfoto"}
+            className="h-[35mm] w-[28mm] shrink-0 rounded-sm object-cover"
+            style={{ border: "1px solid #d9d2c5" }}
+          />
         ) : null}
-        <p className="mt-2 flex flex-wrap gap-x-4 text-[9.5pt]" style={{ color: "#5c6675" }}>
-          {data.address ? <span>{data.address}</span> : null}
-          {data.email ? <span>{data.email}</span> : null}
-          {data.phone ? <span>{data.phone}</span> : null}
-        </p>
       </header>
 
       {data.summary ? <p className="mt-4 text-[10.5pt]">{data.summary}</p> : null}

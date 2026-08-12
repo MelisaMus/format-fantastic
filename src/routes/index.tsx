@@ -49,7 +49,7 @@ function Index() {
     try {
       const { parsePdfToCv } = await import("@/lib/pdf-import");
       const { cv } = await parsePdfToCv(file);
-      update(cv);
+      update({ ...cv, photo: cv.photo || data.photo || "" });
     } catch (e) {
       console.error(e);
       setError("Diese PDF konnte nicht gelesen werden. Du kannst die Inhalte manuell eintragen.");
