@@ -16,6 +16,33 @@ function hexToRgb(hex: string) {
   return { r: ((n >> 16) & 255) / 255, g: ((n >> 8) & 255) / 255, b: (n & 255) / 255 };
 }
 
+/** Crops a data URL to the given aspect ratio (centered), like CSS object-cover. */
+async function coverCrop(dataUrl: string, aspect: number): Promise<string> {
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = reject;
+    el.src = dataUrl;
+  });
+  const srcAspect = img.width / img.height;
+  let sw = img.width;
+  let sh = img.height;
+  if (srcAspect > aspect) sw = img.height * aspect;
+  else sh = img.width / aspect;
+  const sx = (img.width - sw) / 2;
+  const sy = (img.height - sh) / 2;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(sw);
+  canvas.height = Math.round(sh);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return dataUrl;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/jpeg", 0.95);
+}
+
+
+
 /**
  * Renders the CV to a real PDF with pdf-lib so the output is identical in
  * every browser (no print dialog margins or headers).
