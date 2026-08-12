@@ -58,10 +58,10 @@ export async function extractLines(file: File): Promise<string[]> {
       const startsNewBlock =
         /^[•·▪◦*]/.test(row.text) || PERIOD_START.test(row.text) || PERIOD_END.test(row.text);
       const wrapped = prev && !startsNewBlock && prev.end > rightEdge - 14;
-      if (wrapped) {
-        const merged = /-$/.test(prev!.text)
-          ? prev!.text.replace(/-$/, "") + row.text
-          : `${prev!.text} ${row.text}`;
+      if (wrapped && prev) {
+        const merged: string = /-$/.test(prev.text)
+          ? prev.text.replace(/-$/, "") + row.text
+          : `${prev.text} ${row.text}`;
         out[out.length - 1] = merged;
         prev = { text: merged, end: row.end };
       } else {
