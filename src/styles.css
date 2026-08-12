@@ -162,7 +162,8 @@
 /* A4 sheet used for the live preview and for printing to PDF */
 .sheet {
   width: 210mm;
-  min-height: 297mm;
+  /* Arbeitsfläche: immer mindestens 3 A4-Seiten hoch */
+  min-height: 891mm;
   padding: 16mm 15mm;
   background: white;
   color: #1b2330;
