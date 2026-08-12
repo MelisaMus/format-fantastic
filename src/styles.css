@@ -180,6 +180,15 @@
     display: none !important;
   }
 
+  /* Lovable-Badge/Overlays nie mitdrucken */
+  #lovable-badge,
+  [id*="lovable"],
+  [class*="lovable-badge"],
+  a[href*="lovable.dev"] {
+    display: none !important;
+  }
+
+
   body {
     background: white;
   }
