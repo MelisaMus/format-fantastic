@@ -92,11 +92,21 @@ export async function exportCvToPdf(data: CvData): Promise<Blob> {
       const img = photo.startsWith("data:image/png")
         ? await doc.embedPng(bytes)
         : await doc.embedJpg(bytes);
-      page.drawImage(img, { x: marginX + contentW - photoW, y: y - photoH, width: photoW, height: photoH });
+      // Keep the original aspect ratio (no stretching) and fit inside the photo box.
+      const fit = Math.min(photoW / img.width, photoH / img.height);
+      const drawW = img.width * fit;
+      const drawH = img.height * fit;
+      page.drawImage(img, {
+        x: marginX + contentW - photoW + (photoW - drawW) / 2,
+        y: y - photoH + (photoH - drawH) / 2,
+        width: drawW,
+        height: drawH,
+      });
     } catch {
       /* unsupported image – skip */
     }
   }
+
 
   const headerTop = y;
   drawText(data.name || "Dein Name", { x: marginX, size: 22 * scale, font: bold, width: headerW });
