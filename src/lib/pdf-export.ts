@@ -16,6 +16,33 @@ function hexToRgb(hex: string) {
   return { r: ((n >> 16) & 255) / 255, g: ((n >> 8) & 255) / 255, b: (n & 255) / 255 };
 }
 
+/** Crops a data URL to the given aspect ratio (centered), like CSS object-cover. */
+async function coverCrop(dataUrl: string, aspect: number): Promise<string> {
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = reject;
+    el.src = dataUrl;
+  });
+  const srcAspect = img.width / img.height;
+  let sw = img.width;
+  let sh = img.height;
+  if (srcAspect > aspect) sw = img.height * aspect;
+  else sh = img.width / aspect;
+  const sx = (img.width - sw) / 2;
+  const sy = (img.height - sh) / 2;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(sw);
+  canvas.height = Math.round(sh);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return dataUrl;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/jpeg", 0.95);
+}
+
+
+
 /**
  * Renders the CV to a real PDF with pdf-lib so the output is identical in
  * every browser (no print dialog margins or headers).
@@ -82,30 +109,31 @@ export async function exportCvToPdf(data: CvData): Promise<Blob> {
 
   // Header ------------------------------------------------------------------
   const photo = data.photo;
-  const photoW = 26 * MM;
-  const photoH = 33 * MM;
+  const circle = data.settings?.photoShape === "circle";
+  // Same box as the editor preview: 28x35mm (rect) or 30x30mm (circle).
+  const photoW = (circle ? 30 : 28) * MM;
+  const photoH = (circle ? 30 : 35) * MM;
   const headerW = photo ? contentW - photoW - 6 * MM : contentW;
 
   if (photo) {
     try {
-      const bytes = Uint8Array.from(atob(photo.split(",")[1] ?? ""), (c) => c.charCodeAt(0));
-      const img = photo.startsWith("data:image/png")
+      // Cover-crop to the box aspect ratio (like object-cover in the preview).
+      const cropped = await coverCrop(photo, photoW / photoH);
+      const bytes = Uint8Array.from(atob(cropped.split(",")[1] ?? ""), (c) => c.charCodeAt(0));
+      const img = cropped.startsWith("data:image/png")
         ? await doc.embedPng(bytes)
         : await doc.embedJpg(bytes);
-      // Keep the original aspect ratio (no stretching) and fit inside the photo box.
-      const fit = Math.min(photoW / img.width, photoH / img.height);
-      const drawW = img.width * fit;
-      const drawH = img.height * fit;
       page.drawImage(img, {
-        x: marginX + contentW - photoW + (photoW - drawW) / 2,
-        y: y - photoH + (photoH - drawH) / 2,
-        width: drawW,
-        height: drawH,
+        x: marginX + contentW - photoW,
+        y: y - photoH,
+        width: photoW,
+        height: photoH,
       });
     } catch {
       /* unsupported image – skip */
     }
   }
+
 
 
   const headerTop = y;
