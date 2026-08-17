@@ -51,11 +51,26 @@ describe("linesToCv", () => {
     expect(cv.skills.every((g) => g.items.length > 0)).toBe(true);
   });
 
+  it("erkennt Einträge mit Zeitraum am Zeilenende", () => {
+    const parsed = linesToCv([
+      "Experience",
+      "Data Analyst, Acme GmbH (01/2020 – 12/2022)",
+      "• Built dashboards",
+      "Skills",
+      "Analytics: Power BI, SQL, Excel",
+    ]);
+    expect(parsed.experience[0]!.period).toBe("01/2020 – 12/2022");
+    expect(parsed.experience[0]!.title).toBe("Data Analyst");
+    expect(parsed.experience[0]!.org).toBe("Acme GmbH");
+    expect(parsed.skills[0]!.items).toEqual(["Power BI", "SQL", "Excel"]);
+  });
+
   it("bleibt bei leerer Eingabe stabil", () => {
     const empty = linesToCv([]);
     expect(empty.experience).toEqual([]);
     expect(empty.name).toBe("");
   });
+
 });
 
 describe("normalizeCv", () => {
