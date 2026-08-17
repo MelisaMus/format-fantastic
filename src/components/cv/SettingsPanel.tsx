@@ -2,7 +2,17 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { CvSettings, Template } from "@/lib/cv";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { LABEL_PRESETS, type CvSettings, type SectionKey, type Template } from "@/lib/cv";
+
+const LABEL_FIELDS: { key: SectionKey; hint: string }[] = [
+  { key: "experience", hint: "Berufserfahrung" },
+  { key: "education", hint: "Ausbildung" },
+  { key: "skills", hint: "Kenntnisse" },
+  { key: "languages", hint: "Sprachen" },
+  { key: "extras", hint: "Zusätzliches" },
+];
 
 const ACCENTS = [
   { value: "#c9702f", label: "Kupfer" },
@@ -80,6 +90,32 @@ export function SettingsPanel({
           value={[settings.fontScale]}
           onValueChange={([v]) => set({ fontScale: v ?? 1 })}
         />
+      </div>
+
+      <div className="space-y-3 sm:col-span-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Label className="mr-2">Überschriften / Section titles</Label>
+          <Button type="button" variant="secondary" size="sm" onClick={() => set({ labels: { ...LABEL_PRESETS.de } })}>
+            Deutsch
+          </Button>
+          <Button type="button" variant="secondary" size="sm" onClick={() => set({ labels: { ...LABEL_PRESETS.en } })}>
+            English
+          </Button>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {LABEL_FIELDS.map((f) => (
+            <div key={f.key} className="space-y-1">
+              <Label htmlFor={`label-${f.key}`} className="text-xs text-muted-foreground">
+                {f.hint}
+              </Label>
+              <Input
+                id={`label-${f.key}`}
+                value={settings.labels[f.key]}
+                onChange={(e) => set({ labels: { ...settings.labels, [f.key]: e.target.value } })}
+              />
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="flex items-center gap-3 sm:col-span-2">

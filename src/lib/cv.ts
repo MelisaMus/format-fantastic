@@ -14,8 +14,30 @@ export type SkillGroup = {
 
 export type Template = "classic" | "twocol" | "compact";
 
+export type SectionKey = "experience" | "education" | "skills" | "languages" | "extras";
+
+export type SectionLabels = Record<SectionKey, string>;
+
+export const LABEL_PRESETS: Record<"de" | "en", SectionLabels> = {
+  de: {
+    experience: "Beruflicher Werdegang",
+    education: "Ausbildung",
+    skills: "Kenntnisse",
+    languages: "Sprachen",
+    extras: "Zusätzliche Erfahrung",
+  },
+  en: {
+    experience: "Professional Experience",
+    education: "Education",
+    skills: "Skills",
+    languages: "Languages",
+    extras: "Additional Experience",
+  },
+};
+
 export type CvSettings = {
   template: Template;
+  labels: SectionLabels;
   accent: string;
   fontScale: number;
   photoShape: "rect" | "circle";
@@ -54,6 +76,7 @@ export const uid = () => Math.random().toString(36).slice(2, 10);
 
 export const defaultSettings = (): CvSettings => ({
   template: "classic",
+  labels: { ...LABEL_PRESETS.de },
   accent: "#c9702f",
   fontScale: 1,
   photoShape: "rect",
@@ -98,7 +121,11 @@ export function normalizeCv(input: Partial<CvData> | null | undefined): CvData {
     skills: (input.skills ?? []).map((g) => ({ ...emptyGroup(), ...g })),
     extras: (input.extras ?? []).map((g) => ({ ...emptyGroup(), ...g })),
     languages: input.languages ?? [],
-    settings: { ...base.settings, ...(input.settings ?? {}) },
+    settings: {
+      ...base.settings,
+      ...(input.settings ?? {}),
+      labels: { ...base.settings.labels, ...(input.settings?.labels ?? {}) },
+    },
   };
 }
 
