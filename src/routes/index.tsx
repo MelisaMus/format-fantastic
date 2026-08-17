@@ -41,6 +41,7 @@ import {
   uid,
 } from "@/lib/cv";
 import { I18nProvider, useI18n } from "@/lib/i18n";
+import { detectLanguage } from "@/lib/detect-lang";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -135,8 +136,14 @@ function Index() {
         );
       }
       setRawLines(lines);
+      const detected = detectLanguage(lines);
+      setLang(detected);
       updateActive(
-        { ...next, photo: next.photo || active.data.photo, settings: active.data.settings },
+        {
+          ...next,
+          photo: next.photo || active.data.photo,
+          settings: { ...active.data.settings, labels: { ...LABEL_PRESETS[detected] } },
+        },
         { merge: false },
       );
     } catch (e) {
