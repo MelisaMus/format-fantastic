@@ -185,6 +185,18 @@ export async function extractLines(file: File): Promise<string[]> {
 const isBullet = (l: string) => /^[•·▪◦*\-–—]\s?/.test(l);
 const stripBullet = (l: string) => l.replace(/^[•·▪◦*\-–—]\s?/, "").trim();
 
+/** Matches a period written at the end of a line, e.g. "... (03/2025 – heute)". */
+const PERIOD_TAIL =
+  /[(\s|·–—-]\s*((?:\d{2}\/\d{4}|\d{4})\s*[-–—]\s*(?:\d{2}\/\d{4}|\d{4}|aktuell|heute|present|today|now)|(?:\d{2}\/\d{4}|\d{4}))\s*\)?\s*$/i;
+
+/** Splits "Titel | Organisation" or "Titel, Organisation" into title and org. */
+function splitTitleOrg(text: string): { title: string; org: string } {
+  const sep = text.match(/^(.{3,}?)\s*(?:\||·|•|–|—|\s-\s|,\s|\bbei\s|\bat\s)\s*(.{2,})$/);
+  if (!sep) return { title: text, org: "" };
+  return { title: sep[1]!.trim(), org: sep[2]!.trim() };
+}
+
+
 /** Best-effort mapping of raw PDF lines into a structured CV. */
 export function linesToCv(lines: string[]): CvData {
   const cv = emptyCv();
