@@ -33,6 +33,7 @@ import {
   type Profile,
   clearStore,
   emptyProfile,
+  LABEL_PRESETS,
   emptyStore,
   loadStore,
   normalizeCv,
@@ -210,6 +211,14 @@ function Index() {
     commit({ activeId: rest[0]!.id, profiles: rest }, { merge: false });
   };
 
+  const switchLang = (l: "de" | "en") => {
+    setLang(l);
+    updateActive(
+      { ...active.data, settings: { ...active.data.settings, labels: { ...LABEL_PRESETS[l] } } },
+      { merge: false },
+    );
+  };
+
   const editor = <CvEditor data={active.data} onChange={(d) => updateActive(d)} />;
   const settingsPanel = (
     <SettingsPanel
@@ -265,7 +274,7 @@ function Index() {
               variant={lang === "de" ? "secondary" : "ghost"}
               size="sm"
               aria-pressed={lang === "de"}
-              onClick={() => setLang("de")}
+              onClick={() => switchLang("de")}
             >
               DE
             </Button>
@@ -273,7 +282,7 @@ function Index() {
               variant={lang === "en" ? "secondary" : "ghost"}
               size="sm"
               aria-pressed={lang === "en"}
-              onClick={() => setLang("en")}
+              onClick={() => switchLang("en")}
             >
               EN
             </Button>
