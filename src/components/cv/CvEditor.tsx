@@ -18,6 +18,7 @@ import { Plus, Trash2, ImagePlus, RefreshCw, ChevronDown, Crop } from "lucide-re
 import { type CvData, type Entry, type SkillGroup, emptyEntry, emptyGroup, reorder } from "@/lib/cv";
 import { cropDataUrl, dataUrlKb, fileToCompressedDataUrl, loadImage } from "@/lib/image";
 import { SortableList } from "./SortableList";
+import { useT } from "@/lib/i18n";
 
 type Props = {
   data: CvData;
@@ -37,6 +38,7 @@ function Section({
   onAdd?: () => void;
   addLabel?: string;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(true);
   return (
     <Collapsible open={open} onOpenChange={setOpen} className="space-y-3">
@@ -48,7 +50,7 @@ function Section({
         </CollapsibleTrigger>
         {onAdd ? (
           <Button type="button" variant="secondary" size="sm" onClick={onAdd}>
-            <Plus className="size-4" aria-hidden="true" /> {addLabel ?? "Eintrag"}
+            <Plus className="size-4" aria-hidden="true" /> {addLabel ?? t.entry}
           </Button>
         ) : null}
       </div>
@@ -68,6 +70,7 @@ function CropDialog({
   onOpenChange: (v: boolean) => void;
   onDone: (next: string) => void;
 }) {
+  const t = useT();
   const [zoom, setZoom] = useState(1);
   const [offsetX, setOffsetX] = useState(50);
   const [offsetY, setOffsetY] = useState(50);
@@ -96,15 +99,15 @@ function CropDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Foto zuschneiden</DialogTitle>
-          <DialogDescription>Bildausschnitt im Bewerbungsformat (26 × 33 mm) wählen.</DialogDescription>
+          <DialogTitle>{t.cropTitle}</DialogTitle>
+          <DialogDescription>{t.cropDesc}</DialogDescription>
         </DialogHeader>
         <div className="flex gap-4">
           <div className="relative h-52 w-[10.4rem] shrink-0 overflow-hidden rounded-md border bg-muted">
             {size && rect ? (
               <img
                 src={src}
-                alt="Vorschau des gewählten Bildausschnitts"
+                alt={t.cropPreviewAlt}
                 className="absolute max-w-none"
                 style={{
                   width: `${(size.w / rect.w) * 100}%`,
@@ -117,22 +120,22 @@ function CropDialog({
           </div>
           <div className="flex-1 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="crop-zoom">Zoom</Label>
+              <Label htmlFor="crop-zoom">{t.zoom}</Label>
               <Slider id="crop-zoom" min={1} max={3} step={0.05} value={[zoom]} onValueChange={([v]) => setZoom(v ?? 1)} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="crop-x">Horizontal</Label>
+              <Label htmlFor="crop-x">{t.horizontal}</Label>
               <Slider id="crop-x" min={0} max={100} value={[offsetX]} onValueChange={([v]) => setOffsetX(v ?? 50)} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="crop-y">Vertikal</Label>
+              <Label htmlFor="crop-y">{t.vertical}</Label>
               <Slider id="crop-y" min={0} max={100} value={[offsetY]} onValueChange={([v]) => setOffsetY(v ?? 50)} />
             </div>
           </div>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Abbrechen
+            {t.cancel}
           </Button>
           <Button
             onClick={async () => {
@@ -140,7 +143,7 @@ function CropDialog({
               onOpenChange(false);
             }}
           >
-            Übernehmen
+            {t.apply}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -149,6 +152,7 @@ function CropDialog({
 }
 
 function PhotoField({ photo, onChange }: { photo: string; onChange: (next: string) => void }) {
+  const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const [cropOpen, setCropOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -167,13 +171,13 @@ function PhotoField({ photo, onChange }: { photo: string; onChange: (next: strin
     <div className="flex items-center gap-4">
       <div className="flex h-28 w-[5.5rem] shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
         {photo ? (
-          <img src={photo} alt="Aktuelles Bewerbungsfoto" className="h-full w-full object-cover" />
+          <img src={photo} alt={t.photoCurrent} className="h-full w-full object-cover" />
         ) : (
           <ImagePlus className="size-6 text-muted-foreground" aria-hidden="true" />
         )}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="photo-input">Bewerbungsfoto</Label>
+        <Label htmlFor="photo-input">{t.photo}</Label>
         <input
           id="photo-input"
           ref={inputRef}
@@ -188,22 +192,22 @@ function PhotoField({ photo, onChange }: { photo: string; onChange: (next: strin
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="secondary" size="sm" disabled={busy} onClick={() => inputRef.current?.click()}>
             {photo ? <RefreshCw className="size-4" aria-hidden="true" /> : <ImagePlus className="size-4" aria-hidden="true" />}
-            {photo ? "Bild tauschen" : "Bild hinzufügen"}
+            {photo ? t.photoSwap : t.photoAdd}
           </Button>
           {photo ? (
             <>
               <Button type="button" variant="secondary" size="sm" onClick={() => setCropOpen(true)}>
-                <Crop className="size-4" aria-hidden="true" /> Zuschneiden
+                <Crop className="size-4" aria-hidden="true" /> {t.photoCrop}
               </Button>
               <Button type="button" variant="ghost" size="sm" onClick={() => onChange("")}>
-                <Trash2 className="size-4" aria-hidden="true" /> Entfernen
+                <Trash2 className="size-4" aria-hidden="true" /> {t.photoRemove}
               </Button>
             </>
           ) : null}
         </div>
         <p className="text-xs text-muted-foreground">
-          JPG oder PNG, wird automatisch verkleinert{photo ? ` (aktuell ca. ${dataUrlKb(photo)} kB)` : ""} und lokal
-          gespeichert.
+          {t.photoHintA}
+          {photo ? ` (${t.photoHintCurrent(dataUrlKb(photo))})` : ""} {t.photoHintB}
         </p>
       </div>
       <CropDialog src={photo} open={cropOpen} onOpenChange={setCropOpen} onDone={onChange} />
@@ -220,13 +224,14 @@ function EntryList({
   entries: Entry[];
   onChange: (next: Entry[]) => void;
 }) {
+  const t = useT();
   const update = (i: number, patch: Partial<Entry>) =>
     onChange(entries.map((e, k) => (k === i ? { ...e, ...patch } : e)));
 
   return (
     <Section title={label} count={entries.length} onAdd={() => onChange([...entries, emptyEntry()])}>
       {entries.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Noch keine Einträge – füge einen hinzu.</p>
+        <p className="text-sm text-muted-foreground">{t.noEntries}</p>
       ) : null}
       <SortableList
         label={label}
@@ -239,14 +244,14 @@ function EntryList({
               <div className="grid flex-1 gap-2 sm:grid-cols-[10rem_1fr]">
                 <Input
                   value={e.period}
-                  aria-label="Zeitraum"
-                  placeholder="03/2025 - aktuell"
+                  aria-label={t.period}
+                  placeholder={t.periodPlaceholder}
                   onChange={(ev) => update(i, { period: ev.target.value })}
                 />
                 <Input
                   value={e.title}
-                  aria-label="Position oder Abschluss"
-                  placeholder="Position / Abschluss"
+                  aria-label={t.positionOrDegree}
+                  placeholder={t.positionPlaceholder}
                   onChange={(ev) => update(i, { title: ev.target.value })}
                 />
               </div>
@@ -254,7 +259,7 @@ function EntryList({
                 type="button"
                 variant="ghost"
                 size="icon"
-                aria-label={`Eintrag ${e.title || i + 1} löschen`}
+                aria-label={t.deleteEntry(String(e.title || i + 1))}
                 onClick={() => onChange(entries.filter((_, k) => k !== i))}
               >
                 <Trash2 className="size-4" aria-hidden="true" />
@@ -262,13 +267,13 @@ function EntryList({
             </div>
             <Input
               value={e.org}
-              aria-label="Arbeitgeber oder Institution"
-              placeholder="Arbeitgeber / Institution, Ort"
+              aria-label={t.employer}
+              placeholder={t.employerPlaceholder}
               onChange={(ev) => update(i, { org: ev.target.value })}
             />
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground" htmlFor={`bullets-${e.id}`}>
-                Stichpunkte (eine Zeile je Punkt)
+                {t.bullets}
               </Label>
               <Textarea
                 id={`bullets-${e.id}`}
@@ -293,11 +298,12 @@ function GroupList({
   groups: SkillGroup[];
   onChange: (next: SkillGroup[]) => void;
 }) {
+  const t = useT();
   const update = (i: number, patch: Partial<SkillGroup>) =>
     onChange(groups.map((g, k) => (k === i ? { ...g, ...patch } : g)));
 
   return (
-    <Section title={label} count={groups.length} addLabel="Gruppe" onAdd={() => onChange([...groups, emptyGroup()])}>
+    <Section title={label} count={groups.length} addLabel={t.group} onAdd={() => onChange([...groups, emptyGroup()])}>
       <SortableList
         label={label}
         items={groups}
@@ -308,15 +314,15 @@ function GroupList({
             <div className="flex items-center gap-2">
               <Input
                 value={g.title}
-                aria-label="Titel der Gruppe"
-                placeholder="Titel"
+                aria-label={t.groupTitle}
+                placeholder={t.title}
                 onChange={(ev) => update(i, { title: ev.target.value })}
               />
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                aria-label={`Gruppe ${g.title || i + 1} löschen`}
+                aria-label={t.deleteGroup(String(g.title || i + 1))}
                 onClick={() => onChange(groups.filter((_, k) => k !== i))}
               >
                 <Trash2 className="size-4" aria-hidden="true" />
@@ -324,9 +330,9 @@ function GroupList({
             </div>
             <Textarea
               rows={Math.min(8, Math.max(2, g.items.length + 1))}
-              aria-label="Einträge der Gruppe"
+              aria-label={t.groupItems}
               value={g.items.join("\n")}
-              placeholder="Ein Eintrag je Zeile"
+              placeholder={t.oneItemPerLine}
               onChange={(ev) => update(i, { items: ev.target.value.split("\n") })}
             />
           </Card>
@@ -337,36 +343,37 @@ function GroupList({
 }
 
 export function CvEditor({ data, onChange }: Props) {
+  const t = useT();
   const set = (patch: Partial<CvData>) => onChange({ ...data, ...patch });
 
   return (
     <div className="space-y-8">
-      <Section title="Kopfbereich">
+      <Section title={t.header}>
         <PhotoField photo={data.photo ?? ""} onChange={(photo) => set({ photo })} />
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1">
-            <Label htmlFor="f-name">Name</Label>
+            <Label htmlFor="f-name">{t.name}</Label>
             <Input id="f-name" value={data.name} onChange={(e) => set({ name: e.target.value })} />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="f-headline">Untertitel</Label>
+            <Label htmlFor="f-headline">{t.headline}</Label>
             <Input id="f-headline" value={data.headline} onChange={(e) => set({ headline: e.target.value })} />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="f-address">Anschrift</Label>
+            <Label htmlFor="f-address">{t.address}</Label>
             <Input id="f-address" value={data.address} onChange={(e) => set({ address: e.target.value })} />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="f-email">E-Mail</Label>
+            <Label htmlFor="f-email">{t.email}</Label>
             <Input id="f-email" type="email" value={data.email} onChange={(e) => set({ email: e.target.value })} />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="f-phone">Telefon</Label>
+            <Label htmlFor="f-phone">{t.phone}</Label>
             <Input id="f-phone" type="tel" value={data.phone} onChange={(e) => set({ phone: e.target.value })} />
           </div>
         </div>
         <div className="space-y-1">
-          <Label htmlFor="f-summary">Kurzprofil</Label>
+          <Label htmlFor="f-summary">{t.summary}</Label>
           <Textarea id="f-summary" rows={3} value={data.summary} onChange={(e) => set({ summary: e.target.value })} />
         </div>
       </Section>
@@ -382,7 +389,7 @@ export function CvEditor({ data, onChange }: Props) {
         <Textarea
           id="f-languages"
           rows={4}
-          placeholder="Eine Sprache je Zeile"
+          placeholder={t.oneLanguagePerLine}
           value={data.languages.join("\n")}
           onChange={(e) => set({ languages: e.target.value.split("\n") })}
         />

@@ -5,22 +5,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { LABEL_PRESETS, type CvSettings, type SectionKey, type Template } from "@/lib/cv";
+import { useI18n } from "@/lib/i18n";
 
-const LABEL_FIELDS: { key: SectionKey; hint: string }[] = [
-  { key: "experience", hint: "Berufserfahrung" },
-  { key: "education", hint: "Ausbildung" },
-  { key: "skills", hint: "Kenntnisse" },
-  { key: "languages", hint: "Sprachen" },
-  { key: "extras", hint: "Zusätzliches" },
-];
+const LABEL_KEYS: SectionKey[] = ["experience", "education", "skills", "languages", "extras"];
 
 const ACCENTS = [
-  { value: "#c9702f", label: "Kupfer" },
-  { value: "#2d5d7c", label: "Stahlblau" },
-  { value: "#3f6b4a", label: "Salbei" },
-  { value: "#7a3b52", label: "Bordeaux" },
-  { value: "#39424e", label: "Graphit" },
-];
+  { value: "#c9702f", key: "accentCopper" },
+  { value: "#2d5d7c", key: "accentSteel" },
+  { value: "#3f6b4a", key: "accentSage" },
+  { value: "#7a3b52", key: "accentBordeaux" },
+  { value: "#39424e", key: "accentGraphite" },
+] as const;
 
 export function SettingsPanel({
   settings,
@@ -29,46 +24,54 @@ export function SettingsPanel({
   settings: CvSettings;
   onChange: (next: CvSettings) => void;
 }) {
+  const { t, setLang } = useI18n();
+  const hints: Record<SectionKey, string> = {
+    experience: t.hintExperience,
+    education: t.hintEducation,
+    skills: t.hintSkills,
+    languages: t.hintLanguages,
+    extras: t.hintExtras,
+  };
   const set = (patch: Partial<CvSettings>) => onChange({ ...settings, ...patch });
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <div className="space-y-1">
-        <Label htmlFor="tpl">Vorlage</Label>
+        <Label htmlFor="tpl">{t.template}</Label>
         <Select value={settings.template} onValueChange={(v) => set({ template: v as Template })}>
           <SelectTrigger id="tpl">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="classic">Klassisch (einspaltig)</SelectItem>
-            <SelectItem value="twocol">Zweispaltig mit Seitenleiste</SelectItem>
-            <SelectItem value="compact">Kompakt</SelectItem>
+            <SelectItem value="classic">{t.tplClassic}</SelectItem>
+            <SelectItem value="twocol">{t.tplTwocol}</SelectItem>
+            <SelectItem value="compact">{t.tplCompact}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <div className="space-y-1">
-        <Label htmlFor="shape">Fotoform</Label>
+        <Label htmlFor="shape">{t.photoShape}</Label>
         <Select value={settings.photoShape} onValueChange={(v) => set({ photoShape: v as "rect" | "circle" })}>
           <SelectTrigger id="shape">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="rect">Rechteckig</SelectItem>
-            <SelectItem value="circle">Rund</SelectItem>
+            <SelectItem value="rect">{t.shapeRect}</SelectItem>
+            <SelectItem value="circle">{t.shapeCircle}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <div className="space-y-2">
-        <Label>Akzentfarbe</Label>
+        <Label>{t.accent}</Label>
         <div className="flex gap-2">
           {ACCENTS.map((a) => (
             <button
               key={a.value}
               type="button"
               onClick={() => set({ accent: a.value })}
-              aria-label={`Akzentfarbe ${a.label}`}
+              aria-label={`${t.accent}: ${t[a.key]}`}
               aria-pressed={settings.accent === a.value}
               className={`size-11 rounded-full border-2 ${
                 settings.accent === a.value ? "border-foreground" : "border-transparent"
@@ -81,7 +84,7 @@ export function SettingsPanel({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="scale">Schriftgröße ({Math.round(settings.fontScale * 100)} %)</Label>
+        <Label htmlFor="scale">{t.fontSize(Math.round(settings.fontScale * 100))}</Label>
         <Slider
           id="scale"
           min={0.85}
@@ -94,24 +97,32 @@ export function SettingsPanel({
 
       <div className="space-y-3 sm:col-span-2">
         <div className="flex flex-wrap items-center gap-2">
-          <Label className="mr-2">Überschriften / Section titles</Label>
-          <Button type="button" variant="secondary" size="sm" onClick={() => set({ labels: { ...LABEL_PRESETS.de } })}>
-            Deutsch
+          <Label className="mr-2">{t.sectionTitles}</Label>
+          <Button type="button" variant="secondary" size="sm" onClick={() => {
+              setLang("de");
+              set({ labels: { ...LABEL_PRESETS.de } });
+            }}
+          >
+            {t.german}
           </Button>
-          <Button type="button" variant="secondary" size="sm" onClick={() => set({ labels: { ...LABEL_PRESETS.en } })}>
-            English
+          <Button type="button" variant="secondary" size="sm" onClick={() => {
+              setLang("en");
+              set({ labels: { ...LABEL_PRESETS.en } });
+            }}
+          >
+            {t.english}
           </Button>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          {LABEL_FIELDS.map((f) => (
-            <div key={f.key} className="space-y-1">
-              <Label htmlFor={`label-${f.key}`} className="text-xs text-muted-foreground">
-                {f.hint}
+          {LABEL_KEYS.map((key) => (
+            <div key={key} className="space-y-1">
+              <Label htmlFor={`label-${key}`} className="text-xs text-muted-foreground">
+                {hints[key]}
               </Label>
               <Input
-                id={`label-${f.key}`}
-                value={settings.labels[f.key]}
-                onChange={(e) => set({ labels: { ...settings.labels, [f.key]: e.target.value } })}
+                id={`label-${key}`}
+                value={settings.labels[key]}
+                onChange={(e) => set({ labels: { ...settings.labels, [key]: e.target.value } })}
               />
             </div>
           ))}
@@ -124,7 +135,7 @@ export function SettingsPanel({
           checked={settings.showPageGuides}
           onCheckedChange={(v) => set({ showPageGuides: v })}
         />
-        <Label htmlFor="guides">Seitenumbrüche in der Vorschau anzeigen</Label>
+        <Label htmlFor="guides">{t.showGuides}</Label>
       </div>
     </div>
   );
