@@ -185,6 +185,18 @@ export async function extractLines(file: File): Promise<string[]> {
 const isBullet = (l: string) => /^[•·▪◦*\-–—]\s?/.test(l);
 const stripBullet = (l: string) => l.replace(/^[•·▪◦*\-–—]\s?/, "").trim();
 
+/** Matches a period written at the end of a line, e.g. "... (03/2025 – heute)". */
+const PERIOD_TAIL =
+  /[(\s|·–—-]\s*((?:\d{2}\/\d{4}|\d{4})\s*[-–—]\s*(?:\d{2}\/\d{4}|\d{4}|aktuell|heute|present|today|now)|(?:\d{2}\/\d{4}|\d{4}))\s*\)?\s*$/i;
+
+/** Splits "Titel | Organisation" or "Titel, Organisation" into title and org. */
+function splitTitleOrg(text: string): { title: string; org: string } {
+  const sep = text.match(/^(.{3,}?)\s*(?:\||·|•|–|—|\s-\s|,\s|\bbei\s|\bat\s)\s*(.{2,})$/);
+  if (!sep) return { title: text, org: "" };
+  return { title: sep[1]!.trim(), org: sep[2]!.trim() };
+}
+
+
 /** Best-effort mapping of raw PDF lines into a structured CV. */
 export function linesToCv(lines: string[]): CvData {
   const cv = emptyCv();
@@ -254,7 +266,12 @@ export function linesToCv(lines: string[]): CvData {
       if (start) {
         push();
         current = { id: uid(), period: start[0].trim(), title: "", org: "", bullets: [] };
-        addContent(line.slice(start[0].length));
+        const rest = line.slice(start[0].length).replace(/^[\s|·•–—:,-]+/, "");
+        if (rest) {
+          const { title, org } = splitTitleOrg(rest);
+          current.title = title;
+          current.org = org;
+        }
         continue;
       }
 
@@ -262,6 +279,24 @@ export function linesToCv(lines: string[]): CvData {
       if (current && cont) {
         current.period = `${current.period} ${cont[0].trim()}`.replace(/\s+/g, " ");
         addContent(line.slice(cont[0].length));
+        continue;
+      }
+
+      // "Referentin, Universität Freiburg (03/2025 – heute)" – period at line end.
+      const tail = !isBullet(line) && line.match(PERIOD_TAIL);
+      if (tail) {
+        push();
+        const head = line.slice(0, tail.index).replace(/[\s(|·•–—,-]+$/, "");
+        const { title, org } = splitTitleOrg(head);
+        current = { id: uid(), period: tail[1]!.trim(), title, org, bullets: [] };
+        continue;
+      }
+
+      // A short, non-bullet line without any entry open starts a new entry
+      // instead of getting lost.
+      if (!current && !isBullet(line) && line.length <= 90) {
+        const { title, org } = splitTitleOrg(line);
+        current = { id: uid(), period: "", title, org, bullets: [] };
         continue;
       }
 
@@ -273,21 +308,37 @@ export function linesToCv(lines: string[]): CvData {
 
 
     if (section === "languages") {
-      cv.languages.push(stripBullet(line));
+      const l = stripBullet(line);
+      if (/,/.test(l) && !/[()]/.test(l) && l.split(",").every((p) => p.trim().length <= 24)) {
+        for (const part of l.split(",")) if (part.trim()) cv.languages.push(part.trim());
+      } else cv.languages.push(l);
       continue;
     }
 
     if (section === "skills" || section === "extras") {
       const list = section === "skills" ? cv.skills : cv.extras;
+      // "Analytics: Power BI, SQL, Excel" – label plus comma separated items.
+      const labelled = line.match(/^([^:]{2,40}):\s*(.+)$/);
+      if (labelled && /,/.test(labelled[2]!)) {
+        list.push({
+          id: uid(),
+          title: labelled[1]!.trim(),
+          items: labelled[2]!.split(",").map((s) => s.trim()).filter(Boolean),
+        });
+        continue;
+      }
       const group = list[list.length - 1];
       if (!group) continue;
       if (line.length < 40 && !isBullet(line) && group.items.length > 2) {
         list.push({ id: uid(), title: line, items: [] });
+      } else if (/,/.test(line) && line.split(",").length > 2) {
+        for (const part of stripBullet(line).split(",")) if (part.trim()) group.items.push(part.trim());
       } else {
         group.items.push(stripBullet(line));
       }
       continue;
     }
+
 
     if (section === null && !sectionSeen) intro.push(line);
     else preamble.push(line);
