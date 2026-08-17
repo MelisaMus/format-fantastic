@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 export type UiLang = "de" | "en";
 
@@ -237,6 +237,10 @@ export function readUiLang(): UiLang {
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<UiLang>("de");
+
+  useEffect(() => {
+    setLangState(readUiLang());
+  }, []);
 
   const value = useMemo(
     () => ({
