@@ -80,6 +80,7 @@ function Groups({ groups, asList }: { groups: SkillGroup[]; asList: boolean }) {
 export function CvPreview({ data }: { data: CvData }) {
   const s = data.settings;
   const accent = s.accent;
+  const L = s.labels;
   const compact = s.template === "compact";
   const twoCol = s.template === "twocol";
   const fontSize = (compact ? 9.8 : 10.5) * s.fontScale;
@@ -87,7 +88,7 @@ export function CvPreview({ data }: { data: CvData }) {
   const sidebar = (
     <>
       {data.skills.length > 0 && (
-        <Section title="Kenntnisse" accent={accent}>
+        <Section title={L.skills} accent={accent}>
           <div className="space-y-2">
             {data.skills.map((g) => (
               <div key={g.id} className="break-inside-avoid">
@@ -101,7 +102,7 @@ export function CvPreview({ data }: { data: CvData }) {
         </Section>
       )}
       {data.languages.filter(Boolean).length > 0 && (
-        <Section title="Sprachen" accent={accent}>
+        <Section title={L.languages} accent={accent}>
           <div className="text-[0.95em]">{data.languages.filter(Boolean).join(" · ")}</div>
         </Section>
       )}
@@ -111,21 +112,21 @@ export function CvPreview({ data }: { data: CvData }) {
   const main = (
     <>
       {data.experience.length > 0 && (
-        <Section title="Beruflicher Werdegang" accent={accent}>
+        <Section title={L.experience} accent={accent}>
           {data.experience.map((e) => (
             <EntryBlock key={e.id} {...e} compact={compact} />
           ))}
         </Section>
       )}
       {data.education.length > 0 && (
-        <Section title="Ausbildung" accent={accent}>
+        <Section title={L.education} accent={accent}>
           {data.education.map((e) => (
             <EntryBlock key={e.id} {...e} compact={compact} />
           ))}
         </Section>
       )}
       {data.extras.length > 0 && (
-        <Section title="Zusätzliche Erfahrung" accent={accent}>
+        <Section title={L.extras} accent={accent}>
           <Groups groups={data.extras} asList />
         </Section>
       )}
@@ -173,12 +174,12 @@ export function CvPreview({ data }: { data: CvData }) {
         <>
           {main}
           {data.skills.length > 0 && (
-            <Section title="Kenntnisse" accent={accent}>
+            <Section title={L.skills} accent={accent}>
               <Groups groups={data.skills} asList={false} />
             </Section>
           )}
           {data.languages.filter(Boolean).length > 0 && (
-            <Section title="Sprachen" accent={accent}>
+            <Section title={L.languages} accent={accent}>
               <div className="text-[0.95em]">{data.languages.filter(Boolean).join(" · ")}</div>
             </Section>
           )}

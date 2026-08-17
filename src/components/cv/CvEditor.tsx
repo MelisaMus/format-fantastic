@@ -371,11 +371,11 @@ export function CvEditor({ data, onChange }: Props) {
         </div>
       </Section>
 
-      <EntryList label="Beruflicher Werdegang" entries={data.experience} onChange={(experience) => set({ experience })} />
-      <EntryList label="Ausbildung" entries={data.education} onChange={(education) => set({ education })} />
-      <GroupList label="Kenntnisse" groups={data.skills} onChange={(skills) => set({ skills })} />
+      <EntryList label={data.settings.labels.experience} entries={data.experience} onChange={(experience) => set({ experience })} />
+      <EntryList label={data.settings.labels.education} entries={data.education} onChange={(education) => set({ education })} />
+      <GroupList label={data.settings.labels.skills} groups={data.skills} onChange={(skills) => set({ skills })} />
 
-      <Section title="Sprachen">
+      <Section title={data.settings.labels.languages}>
         <Label htmlFor="f-languages" className="sr-only">
           Sprachen
         </Label>
@@ -388,7 +388,7 @@ export function CvEditor({ data, onChange }: Props) {
         />
       </Section>
 
-      <GroupList label="Zusätzliche Erfahrung" groups={data.extras} onChange={(extras) => set({ extras })} />
+      <GroupList label={data.settings.labels.extras} groups={data.extras} onChange={(extras) => set({ extras })} />
     </div>
   );
 }

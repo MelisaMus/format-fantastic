@@ -239,23 +239,23 @@ export async function exportCvToPdf(data: CvData): Promise<Blob> {
 
 
   if (data.experience.length) {
-    heading("Beruflicher Werdegang");
+    heading(data.settings.labels.experience);
     data.experience.forEach(entryBlock);
   }
   if (data.education.length) {
-    heading("Ausbildung");
+    heading(data.settings.labels.education);
     data.education.forEach(entryBlock);
   }
   if (data.skills.length) {
-    heading("Kenntnisse");
+    heading(data.settings.labels.skills);
     data.skills.forEach((g) => groupBlock(g, false));
   }
   if (data.languages.filter(Boolean).length) {
-    heading("Sprachen");
+    heading(data.settings.labels.languages);
     drawText(data.languages.filter(Boolean).join(" \u00b7 "), { x: marginX, size: base });
   }
   if (data.extras.length) {
-    heading("Zusätzliche Erfahrung");
+    heading(data.settings.labels.extras);
     data.extras.forEach((g) => groupBlock(g, true));
   }
 
