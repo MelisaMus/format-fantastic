@@ -39,6 +39,7 @@ import {
   saveStore,
   uid,
 } from "@/lib/cv";
+import { I18nProvider, useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -58,10 +59,15 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: Index,
+  component: () => (
+    <I18nProvider>
+      <Index />
+    </I18nProvider>
+  ),
 });
 
 function Index() {
+  const { t, lang, setLang } = useI18n();
   const isMobile = useIsMobile();
   const history = useHistory<CvStore>(emptyStore());
   const store = history.state;
@@ -124,7 +130,7 @@ function Index() {
         next.experience.length === 0 && next.education.length === 0 && next.skills.length === 0 && !next.name;
       if (empty) {
         setError(
-          "In dieser PDF wurde kein durchsuchbarer Text gefunden (vermutlich ein Scan). Unten findest du – falls vorhanden – die erkannten Zeilen zum Kopieren.",
+          t.errNoText,
         );
       }
       setRawLines(lines);
@@ -134,7 +140,7 @@ function Index() {
       );
     } catch (e) {
       console.error(e);
-      setError("Diese PDF konnte nicht gelesen werden. Du kannst die Inhalte manuell eintragen.");
+      setError(t.errPdfRead);
     } finally {
       setBusy(false);
     }
@@ -153,13 +159,13 @@ function Index() {
           { merge: false },
         );
       } else {
-        const p = emptyProfile("Import");
+        const p = emptyProfile(t.importProfile);
         p.data = normalizeCv((parsed as Profile).data ?? (parsed as unknown as CvData));
         commit({ activeId: p.id, profiles: [...store.profiles, p] }, { merge: false });
       }
-      setStatus("Backup importiert.");
+      setStatus(t.msgBackupImported);
     } catch {
-      setError("Die JSON-Datei konnte nicht gelesen werden.");
+      setError(t.errJson);
     }
   };
 
@@ -180,17 +186,17 @@ function Index() {
       const { exportCvToPdf, downloadBlob, safeFileName } = await import("@/lib/pdf-export");
       const blob = await exportCvToPdf(active.data);
       downloadBlob(blob, `${safeFileName(active.data.name || active.name)}.pdf`);
-      setStatus("PDF erstellt.");
+      setStatus(t.msgPdfCreated);
     } catch (e) {
       console.error(e);
-      setError("PDF-Export fehlgeschlagen – nutze alternativ „Drucken“.");
+      setError(t.errExport);
     } finally {
       setBusy(false);
     }
   };
 
   const addProfile = (from?: Profile) => {
-    const p = emptyProfile(from ? `${from.name} (Kopie)` : `Lebenslauf ${store.profiles.length + 1}`);
+    const p = emptyProfile(from ? `${from.name} (${t.copySuffix})` : `${t.defaultProfile} ${store.profiles.length + 1}`);
     if (from) p.data = normalizeCv(structuredClone(from.data));
     commit({ activeId: p.id, profiles: [...store.profiles, p] }, { merge: false });
   };
@@ -213,12 +219,12 @@ function Index() {
   );
   const rawPanel = rawLines?.length ? (
     <Card className="space-y-2 p-4">
-      <h3 className="text-lg">Erkannter Rohtext</h3>
+      <h3 className="text-lg">{t.rawTitle}</h3>
       <p className="text-sm text-muted-foreground">
-        Falls die Zuordnung nicht passt, kannst du Textteile hier herauskopieren.
+        {t.rawHint}
       </p>
       <Label htmlFor="raw" className="sr-only">
-        Erkannter Rohtext
+        {t.rawTitle}
       </Label>
       <textarea
         id="raw"
@@ -242,25 +248,44 @@ function Index() {
           <div className="mr-auto">
             <h1 className="text-2xl leading-none">CV Studio</h1>
             <p className="text-sm text-muted-foreground">
-              PDF importieren, Inhalte bearbeiten, perfekt formatiert exportieren
+              {t.tagline}
             </p>
           </div>
 
           <span className="flex items-center gap-1 text-sm text-muted-foreground" aria-live="polite">
             {saved ? (
               <>
-                <Check className="size-4" aria-hidden="true" /> Gespeichert
+                <Check className="size-4" aria-hidden="true" /> {t.saved}
               </>
             ) : null}
           </span>
 
-          <Button variant="ghost" size="icon" aria-label="Rückgängig" disabled={!history.canUndo} onClick={history.undo}>
+          <div className="flex items-center gap-1" role="group" aria-label={t.language}>
+            <Button
+              variant={lang === "de" ? "secondary" : "ghost"}
+              size="sm"
+              aria-pressed={lang === "de"}
+              onClick={() => setLang("de")}
+            >
+              DE
+            </Button>
+            <Button
+              variant={lang === "en" ? "secondary" : "ghost"}
+              size="sm"
+              aria-pressed={lang === "en"}
+              onClick={() => setLang("en")}
+            >
+              EN
+            </Button>
+          </div>
+
+          <Button variant="ghost" size="icon" aria-label={t.undo} disabled={!history.canUndo} onClick={history.undo}>
             <Undo2 className="size-4" aria-hidden="true" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Wiederherstellen"
+            aria-label={t.redo}
             disabled={!history.canRedo}
             onClick={history.redo}
           >
@@ -272,7 +297,7 @@ function Index() {
             type="file"
             accept="application/pdf"
             className="sr-only"
-            aria-label="PDF-Datei auswählen"
+            aria-label={t.choosePdf}
             onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) void onPdf(f);
@@ -284,7 +309,7 @@ function Index() {
             type="file"
             accept="application/json"
             className="sr-only"
-            aria-label="JSON-Backup auswählen"
+            aria-label={t.chooseJson}
             onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) void onJson(f);
@@ -293,25 +318,25 @@ function Index() {
           />
           <Button variant="secondary" onClick={() => pdfRef.current?.click()} disabled={busy}>
             {busy ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <FileUp className="size-4" aria-hidden="true" />}
-            PDF importieren
+            {t.importPdf}
           </Button>
           <Button variant="ghost" onClick={downloadJson}>
-            <Download className="size-4" aria-hidden="true" /> Backup
+            <Download className="size-4" aria-hidden="true" /> {t.backup}
           </Button>
           <Button variant="ghost" onClick={() => jsonRef.current?.click()}>
-            <Upload className="size-4" aria-hidden="true" /> Backup laden
+            <Upload className="size-4" aria-hidden="true" /> {t.loadBackup}
           </Button>
           <Button variant="ghost" onClick={() => window.print()}>
-            <Printer className="size-4" aria-hidden="true" /> Drucken
+            <Printer className="size-4" aria-hidden="true" /> {t.print}
           </Button>
           <Button onClick={() => void exportPdf()} disabled={busy}>
-            <FileDown className="size-4" aria-hidden="true" /> PDF exportieren
+            <FileDown className="size-4" aria-hidden="true" /> {t.exportPdf}
           </Button>
         </div>
 
         <div className="mx-auto flex max-w-[1500px] flex-wrap items-end gap-3 px-6 pb-4">
           <div className="space-y-1">
-            <Label htmlFor="profile-select">Profil</Label>
+            <Label htmlFor="profile-select">{t.profile}</Label>
             <Select
               value={active.id}
               onValueChange={(id) => commit({ ...store, activeId: id }, { merge: false })}
@@ -329,7 +354,7 @@ function Index() {
             </Select>
           </div>
           <div className="space-y-1">
-            <Label htmlFor="profile-name">Profilname</Label>
+            <Label htmlFor="profile-name">{t.profileName}</Label>
             <Input
               id="profile-name"
               value={active.name}
@@ -342,13 +367,13 @@ function Index() {
             />
           </div>
           <Button variant="secondary" onClick={() => addProfile()}>
-            <Plus className="size-4" aria-hidden="true" /> Neu
+            <Plus className="size-4" aria-hidden="true" /> {t.new}
           </Button>
           <Button variant="secondary" onClick={() => addProfile(active)}>
-            <Copy className="size-4" aria-hidden="true" /> Duplizieren
+            <Copy className="size-4" aria-hidden="true" /> {t.duplicate}
           </Button>
           <Button variant="ghost" onClick={removeProfile}>
-            <Trash2 className="size-4" aria-hidden="true" /> Löschen
+            <Trash2 className="size-4" aria-hidden="true" /> {t.delete}
           </Button>
           <Button
             variant="ghost"
@@ -357,7 +382,7 @@ function Index() {
               history.reset(emptyStore());
             }}
           >
-            <RotateCcw className="size-4" aria-hidden="true" /> Alles zurücksetzen
+            <RotateCcw className="size-4" aria-hidden="true" /> {t.resetAll}
           </Button>
         </div>
       </header>
@@ -379,13 +404,13 @@ function Index() {
           <Tabs defaultValue="editor">
             <TabsList className="no-print mb-4 w-full">
               <TabsTrigger value="editor" className="flex-1">
-                Bearbeiten
+                {t.tabEdit}
               </TabsTrigger>
               <TabsTrigger value="preview" className="flex-1">
-                Vorschau
+                {t.tabPreview}
               </TabsTrigger>
               <TabsTrigger value="settings" className="flex-1">
-                Layout
+                {t.tabLayout}
               </TabsTrigger>
             </TabsList>
             <TabsContent value="editor" className="no-print">
