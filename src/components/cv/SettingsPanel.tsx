@@ -24,7 +24,7 @@ export function SettingsPanel({
   settings: CvSettings;
   onChange: (next: CvSettings) => void;
 }) {
-  const { t, lang, setLang } = useI18n();
+  const { t, setLang } = useI18n();
   const hints: Record<SectionKey, string> = {
     experience: t.hintExperience,
     education: t.hintEducation,
@@ -32,7 +32,6 @@ export function SettingsPanel({
     languages: t.hintLanguages,
     extras: t.hintExtras,
   };
-  const _lang = lang;
   const set = (patch: Partial<CvSettings>) => onChange({ ...settings, ...patch });
 
   return (
