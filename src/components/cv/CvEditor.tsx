@@ -374,7 +374,12 @@ export function CvEditor({ data, onChange }: Props) {
         </div>
         <div className="space-y-1">
           <Label htmlFor="f-summary">{t.summary}</Label>
-          <Textarea id="f-summary" rows={3} value={data.summary} onChange={(e) => set({ summary: e.target.value })} />
+          <Textarea
+            id="f-summary"
+            rows={Math.min(12, Math.max(4, data.summary.split("\n").length + 1))}
+            value={data.summary}
+            onChange={(e) => set({ summary: e.target.value })}
+          />
         </div>
       </Section>
 

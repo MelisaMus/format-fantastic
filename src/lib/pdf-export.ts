@@ -159,7 +159,11 @@ export async function exportCvToPdf(data: CvData): Promise<Blob> {
   y -= 14;
 
   if (data.summary) {
-    drawText(data.summary, { x: marginX, size: base });
+    // Preserve manual line breaks (empty lines become spacing).
+    for (const para of data.summary.split(/\r?\n/)) {
+      if (para.trim()) drawText(para, { x: marginX, size: base });
+      else y -= base * 0.6;
+    }
     y -= 6;
   }
 
