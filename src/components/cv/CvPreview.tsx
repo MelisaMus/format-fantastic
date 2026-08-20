@@ -163,7 +163,7 @@ export function CvPreview({ data }: { data: CvData }) {
         ) : null}
       </header>
 
-      {data.summary ? <p className="mt-4">{data.summary}</p> : null}
+      {data.summary ? <p className="mt-4 whitespace-pre-line">{data.summary}</p> : null}
 
       {twoCol ? (
         <div className="mt-2 grid grid-cols-[1fr_62mm] gap-8">
